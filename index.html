@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>คลังความรู้</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>คลังความรู้</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,7 +87,9 @@
             display: flex; /* Use flexbox for internal layout */
             flex-direction: column;
             justify-content: space-between; /* Push content apart */
-            width: 420px; /* Fixed width as requested */
+            /* Adjusted width for better responsiveness */
+            width: 100%; /* Default to full width on small screens */
+            max-width: 450px; /* Max width for larger screens */
             box-sizing: border-box; /* Include padding in width */
         }
         .card:hover {
@@ -243,7 +246,7 @@
             justify-content: center;
             align-items: center;
             font-size: 2rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 44px 8px rgba(0, 0, 0, 0.2); /* Increased shadow */
             cursor: pointer;
             transition: background-color 0.3s ease;
             z-index: 999;
@@ -392,11 +395,32 @@
         }
         .links-grid {
             display: grid;
-            /* Adjust grid columns for ~4 per row on larger screens, responsive */
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); /* Use auto-fit and fixed 420px */
+            /* Adjusted grid columns for better responsiveness */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Allow cards to be smaller */
             gap: 20px; /* Space between grid items */
-             justify-content: center; /* Center the grid items */
+            /* Removed justify-content: center; to align left */
         }
+
+        /* Media queries for grid columns */
+        @media (min-width: 768px) { /* Medium screens and up */
+            .links-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 columns */
+            }
+        }
+
+        @media (min-width: 1024px) { /* Large screens and up */
+            .links-grid {
+                grid-template-columns: repeat(3, 1fr); /* 3 columns */
+            }
+        }
+
+         @media (min-width: 1280px) { /* Extra large screens and up */
+            .links-grid {
+                grid-template-columns: repeat(4, 1fr); /* Max 4 columns */
+            }
+        }
+
+
         .no-links {
             text-align: center;
             color: #6b7280;
@@ -449,7 +473,9 @@
 
     <div id="mainContent" class="container mx-auto p-4 hidden">
          <div class="header-container">
-             <img src="https://i.postimg.cc/xf6MDW3D/logo.png?dl=1" alt="Site Logo" class="site-logo"> <h1 class="text-3xl font-bold text-center text-gray-800">คลังความรู้</h1> </div>
+             <img src="https://i.postimg.cc/xf6MDW3D/logo.png?dl=1" alt="Site Logo" class="site-logo">
+             <h1 class="text-3xl font-bold text-center text-gray-800">คลังความรู้</h1>
+         </div>
 
 
         <div class="filter-bar">
@@ -460,7 +486,10 @@
                     </select>
                  <select id="filterStatus">
                      <option value="">All Statuses</option>
-                     <option value="In Process">กำลังดำเนินการ</option> <option value="Completed">พร้อมใช้งาน</option> <option value="Inactive">ระงับชั่วคราว</option> </select>
+                     <option value="Completed">พร้อมใช้งาน</option>
+                     <option value="In Process">กำลังดำเนินการ</option>
+                     <option value="Inactive">ระงับชั่วคราว</option>
+                 </select>
             </div>
         </div>
 
@@ -487,13 +516,20 @@
                     <input type="text" id="projectName" required>
                 </div>
                 <div class="form-group">
-                    <label for="tag">Tag:</label>
-                    <input type="text" id="tag" required>
+                    <label for="tagSelect">Tag:</label>
+                    <select id="tagSelect">
+                        <option value="">Select Tag</option>
+                        <option value="addNewTag">Add New Tag...</option>
+                    </select>
+                    <input type="text" id="newTagInput" class="mt-2 hidden" placeholder="Enter New Tag">
                 </div>
                  <div class="form-group">
                     <label for="status">Status:</label>
                     <select id="status" required>
-                         <option value="In Process">กำลังดำเนินการ</option> <option value="Completed">พร้อมใช้งาน</option> <option value="Inactive">ระงับชั่วคราว</option> </select>
+                         <option value="Completed">พร้อมใช้งาน</option>
+                         <option value="In Process">กำลังดำเนินการ</option>
+                         <option value="Inactive">ระงับชั่วคราว</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="description">Description:</label>
@@ -539,7 +575,8 @@
         const linkForm = document.getElementById('linkForm');
         const linkIdInput = document.getElementById('linkId');
         const projectNameInput = document.getElementById('projectName');
-        const tagInput = document.getElementById('tag');
+        const tagSelect = document.getElementById('tagSelect'); // Changed to select
+        const newTagInput = document.getElementById('newTagInput'); // New input for new tags
         const statusInput = document.getElementById('status');
         const descriptionInput = document.getElementById('description');
         const databaseURLInput = document.getElementById('databaseURL'); // New input
@@ -552,6 +589,9 @@
 
 
         let allLinks = []; // Store all fetched links
+
+        // Define the desired status order
+        const statusOrder = ['Completed', 'In Process', 'Inactive'];
 
         // --- Password Handling ---
         passwordInputs.forEach(input => {
@@ -656,6 +696,7 @@
             if (result.status === 'success') {
                 allLinks = result.data;
                 populateTagFilter(allLinks); // Populate tag filter after fetching
+                populateTagSelect(allLinks); // Populate tag select for the modal
                 displayLinks(allLinks);
                 passwordOverlay.classList.add('hidden'); // Hide password screen
                 mainContent.classList.remove('hidden'); // Show main content
@@ -725,6 +766,27 @@
             });
         }
 
+        // Function to populate the tag select in the modal
+        function populateTagSelect(links) {
+             const tags = new Set();
+             links.forEach(link => {
+                 if (link.Tag) {
+                     tags.add(link.Tag);
+                 }
+             });
+
+             // Clear existing options except the default and "Add New Tag"
+             tagSelect.innerHTML = '<option value="">Select Tag</option><option value="addNewTag">Add New Tag...</option>';
+
+             // Add unique tags to the select
+             Array.from(tags).sort().forEach(tag => {
+                 const option = document.createElement('option');
+                 option.value = tag;
+                 option.textContent = tag;
+                 tagSelect.insertBefore(option, tagSelect.lastElementChild); // Insert before "Add New Tag"
+             });
+         }
+
 
         function displayLinks(linksToDisplay) {
             linksContainer.innerHTML = ''; // Clear current links
@@ -736,8 +798,28 @@
                  noLinksMessage.classList.add('hidden');
             }
 
-            // Group links by tag
-            const linksByTag = linksToDisplay.reduce((acc, link) => {
+            // Sort links first by status based on the defined order, then by Project Name
+            const sortedLinks = [...linksToDisplay].sort((a, b) => {
+                const statusA = a.Status || '';
+                const statusB = b.Status || '';
+                const statusOrderA = statusOrder.indexOf(statusA);
+                const statusOrderB = statusOrder.indexOf(statusB);
+
+                if (statusOrderA !== statusOrderB) {
+                    return statusOrderA - statusOrderB; // Sort by status order
+                } else {
+                    // If status is the same, sort by Project Name alphabetically
+                    const nameA = a['Project Name'] ? a['Project Name'].toLowerCase() : '';
+                    const nameB = b['Project Name'] ? b['Project Name'].toLowerCase() : '';
+                    if (nameA < nameB) return -1;
+                    if (nameA > nameB) return 1;
+                    return 0; // Names are equal
+                }
+            });
+
+
+            // Group sorted links by tag
+            const linksByTag = sortedLinks.reduce((acc, link) => {
                 const tag = link.Tag || 'Untagged';
                 if (!acc[tag]) {
                     acc[tag] = [];
@@ -761,13 +843,7 @@
                 const linksGrid = document.createElement('div');
                 linksGrid.classList.add('links-grid');
 
-                // Sort links within each tag by timestamp (most recent first)
-                linksByTag[tag].sort((a, b) => {
-                    const dateA = new Date(a.Timestamp);
-                    const dateB = new Date(b.Timestamp);
-                    return dateB - dateA; // Descending order
-                });
-
+                // Links within each tag are already sorted by status and name
 
                 linksByTag[tag].forEach(link => {
                     const card = createLinkCard(link);
@@ -802,7 +878,8 @@
             card.innerHTML = `
                  <div class="card-meta">
                     ${link.Tag ? `<span class="card-tag">${link.Tag}</span>` : ''}
-                    ${link.Status ? `<span class="card-status ${statusClass}">${thaiStatus}</span>` : ''} <div class="card-action-icons">
+                    ${link.Status ? `<span class="card-status ${statusClass}">${thaiStatus}</span>` : ''}
+                    <div class="card-action-icons">
                         ${link['Database URL'] ? `<i class="fas fa-database card-database-icon" data-url="${link['Database URL']}"></i>` : ''}
                         <i class="fas fa-pen edit-icon" data-id="${link.ID}"></i>
                         <i class="fas fa-trash-can delete-icon" data-id="${link.ID}"></i>
@@ -871,6 +948,12 @@
         function showModal(type, link = null) {
             linkForm.reset(); // Clear form
             linkIdInput.value = ''; // Clear ID
+            newTagInput.classList.add('hidden'); // Hide new tag input by default
+            newTagInput.value = ''; // Clear new tag input
+
+            // Populate the tag select every time the modal is shown
+            populateTagSelect(allLinks);
+            tagSelect.value = ""; // Reset tag select to default
 
             if (type === 'add') {
                 modalTitle.textContent = 'Add New Link';
@@ -880,7 +963,24 @@
                 modalTitle.textContent = 'Edit Link';
                 linkIdInput.value = link.ID;
                 projectNameInput.value = link['Project Name']; // Ensure this is correctly populated
-                tagInput.value = link.Tag;
+
+                // Set the tag select value or show new tag input
+                if (link.Tag && Array.from(tagSelect.options).some(option => option.value === link.Tag)) {
+                     tagSelect.value = link.Tag;
+                     newTagInput.classList.add('hidden'); // Hide new tag input
+                     newTagInput.value = ''; // Clear new tag input
+                } else if (link.Tag) {
+                     // Tag exists but is not in the list (shouldn't happen if populateTagSelect works correctly, but as a fallback)
+                     tagSelect.value = 'addNewTag';
+                     newTagInput.classList.remove('hidden');
+                     newTagInput.value = link.Tag;
+                } else {
+                     tagSelect.value = ""; // Select "Select Tag"
+                     newTagInput.classList.add('hidden'); // Hide new tag input
+                     newTagInput.value = ''; // Clear new tag input
+                }
+
+
                 statusInput.value = link.Status || 'In Process'; // Default to In Process if status is empty
                 descriptionInput.value = link.Description;
                 databaseURLInput.value = link['Database URL'] || ''; // Populate new fields
@@ -898,12 +998,42 @@
         closeModal.addEventListener('click', hideModal);
         cancelModal.addEventListener('click', hideModal);
 
+        // Event listener for the tag select change
+        tagSelect.addEventListener('change', function() {
+            if (this.value === 'addNewTag') {
+                newTagInput.classList.remove('hidden');
+                newTagInput.focus(); // Focus the new tag input
+            } else {
+                newTagInput.classList.add('hidden');
+                newTagInput.value = ''; // Clear the new tag input when selecting an existing tag
+            }
+        });
+
+
         linkForm.addEventListener('submit', async (event) => {
             event.preventDefault();
 
+            // Get the tag value from either the select or the new tag input
+            const selectedTag = tagSelect.value;
+            const tagValue = selectedTag === 'addNewTag' ? newTagInput.value.trim() : selectedTag;
+
+             // Basic validation for new tag input
+             if (selectedTag === 'addNewTag' && tagValue === '') {
+                 alert('Please enter a new tag.');
+                 newTagInput.focus();
+                 return; // Stop form submission
+             }
+             // Basic validation for selecting a tag
+             if (selectedTag === '' && tagValue === '') {
+                 alert('Please select or enter a tag.');
+                 tagSelect.focus();
+                 return; // Stop form submission
+             }
+
+
             const linkData = {
                 projectName: projectNameInput.value, // Ensure this value is captured
-                tag: tagInput.value,
+                tag: tagValue, // Use the determined tag value
                 status: statusInput.value,
                 description: descriptionInput.value,
                 databaseURL: databaseURLInput.value, // Include new fields
